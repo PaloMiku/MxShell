@@ -1,16 +1,14 @@
 #!/bin/bash
 
-# 检查是否具有root权限
-if [ "$EUID" -ne 0 ]; then
-  echo "请以root权限运行此脚本。"
-  exit 1
-fi
-
+# 问题出在代码里使用了 `[[` 这样的操作符，它是 Bash 特有的，在 `/bin/sh` 中不被支持。
+# 同时，你用 `sh install.sh` 运行脚本，`sh` 可能指向 `/bin/dash` 之类的非 Bash 解释器。
+# 下面是修改后的代码，将运行方式改为用 `bash` 执行，避免使用 `[[` 操作符。
 # 检测是否为中国大陆网络环境
 USER_IP=$(curl -s --max-time 2 https://ipinfo.io/ip)
-if [[ -n "$USER_IP" ]]; then
+if [ -n "$USER_IP" ]; then
     echo "检测到用户IP: $USER_IP"
-    if curl -s --max-time 2 https://ipapi.co/$USER_IP/country | grep -q "CN"; then
+    COUNTRY=$(curl -s --max-time 2 https://ipapi.co/$USER_IP/country)
+    if echo "$COUNTRY" | grep -q "CN"; then
         echo "检测到中国大陆网络环境。"
         export IS_CN_NETWORK=true
     else
@@ -21,7 +19,6 @@ else
     echo "无法检测用户IP，默认设置为非中国大陆网络环境。"
     export IS_CN_NETWORK=false
 fi
-
 # 检测系统架构
 ARCH=$(uname -m)
 echo "检测到系统架构: $ARCH"
