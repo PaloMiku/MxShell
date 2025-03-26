@@ -12,7 +12,7 @@ curl -sSL https://raw.githubusercontent.com/PaloMiku/MxShell/refs/heads/main/ins
 
 ### 国内服务器
 
-使用Moeyy的Github加速源。
+使用 Moeyy 的Github加速源。
 
 ```bash
 curl -sSL https://github.moeyy.xyz/https://raw.githubusercontent.com/PaloMiku/MxShell/refs/heads/main/install.sh -o install.sh && bash install.sh
@@ -20,7 +20,7 @@ curl -sSL https://github.moeyy.xyz/https://raw.githubusercontent.com/PaloMiku/Mx
 
 目前它能做到的：
 
-- 自动切换Docker安装源和镜像源
+- 自动切换 Docker 安装源和镜像源
 - 交互式安装 MixSpace 前后端（Docker）
 - 无人值守（预配置）安装 MixSpace 前后端
 
