@@ -187,17 +187,24 @@ import yaml, sys, json
 try:
     with open('$1', 'r') as f:
         config = yaml.safe_load(f)
-    for key, value in config.items():
-        if isinstance(value, str):
-            print(f'{key}=\"{value}\"')
-        elif isinstance(value, list):
-            print(f'{key}=\"{','.join([str(x) for x in value])}\"')
-        elif isinstance(value, dict):
-            print(f'{key}=\"{json.dumps(value)}\"')
-        elif value is None:
-            print(f'{key}=\"\"')
-        else:
-            print(f'{key}={value}')
+    def print_config(config, prefix=''):
+        for key, value in config.items():
+            env_key = (prefix + key).upper()
+            if isinstance(value, str):
+                print(f'{env_key}=\"{value}\"')
+            elif isinstance(value, list):
+                print(f'{env_key}=\"{\",\".join([str(x) for x in value])}\"')
+            elif isinstance(value, dict):
+                print_config(value, prefix=prefix + key + '_')
+            elif isinstance(value, bool):
+                print(f'{env_key}={str(value).lower()}')
+            elif value is None:
+                print(f'{env_key}=\"\"')
+            elif isinstance(value, (int, float)):
+                print(f'{env_key}={value}')
+            else:
+                print(f'{env_key}=\"{json.dumps(value)}\"')
+    print_config(config)
 except Exception as e:
     print(f'解析错误: {str(e)}', file=sys.stderr)
     sys.exit(1)
@@ -233,9 +240,14 @@ if [ -f "$CONFIG_FILE" ]; then
     rm -f "$TEMP_ENV_FILE"
     
     echo "成功从配置文件加载以下变量:"
-    # 显示加载的环境变量
     if [ -n "$JWT_SECRET" ]; then echo "- JWT_SECRET: (已设置，值已隐藏)"; fi
     if [ -n "$ALLOWED_ORIGINS" ]; then echo "- ALLOWED_ORIGINS: $ALLOWED_ORIGINS"; fi
+    if [ -n "$TARGET_DIR" ]; then echo "- TARGET_DIR: $TARGET_DIR"; fi
+    if [ -n "$FRONTEND_INSTALL" ]; then echo "- FRONTEND_INSTALL: $FRONTEND_INSTALL"; fi
+    if [ -n "$FRONTEND_VERSION" ]; then echo "- FRONTEND_VERSION: $FRONTEND_VERSION"; fi
+    if [ -n "$FRONTEND_NEXT_PUBLIC_API_URL" ]; then echo "- NEXT_PUBLIC_API_URL: $FRONTEND_NEXT_PUBLIC_API_URL"; fi
+    if [ -n "$FRONTEND_NEXT_PUBLIC_GATEWAY_URL" ]; then echo "- NEXT_PUBLIC_GATEWAY_URL: $FRONTEND_NEXT_PUBLIC_GATEWAY_URL"; fi
+    if [ -n "$FRONTEND_SHIRO_IMAGE" ]; then echo "- SHIRO_IMAGE: $FRONTEND_SHIRO_IMAGE"; fi
     
     # 检查关键变量是否已加载
     if [ -z "$JWT_SECRET" ] && [ -z "$ALLOWED_ORIGINS" ]; then
@@ -247,23 +259,35 @@ else
 fi
 
 # 用户选择目录
-echo "请输入存储MixSpace容器文件的目录（默认: /opt/mxspace）："
-read -r TARGET_DIR
-TARGET_DIR=${TARGET_DIR:-/opt/mxspace}
+if [ -z "$TARGET_DIR" ]; then
+    echo "请输入存储MixSpace容器文件的目录（默认: /opt/mxspace）："
+    read -r TARGET_DIR
+    TARGET_DIR=${TARGET_DIR:-/opt/mxspace}
+else
+    echo "使用从配置文件加载的TARGET_DIR: $TARGET_DIR"
+fi
 
 # 检查目标目录是否存在
 if [ -d "$TARGET_DIR" ]; then
     echo "目标目录已存在: $TARGET_DIR"
-    echo "是否删除并重新创建？(y/n，默认: n):"
-    read -r DELETE_TARGET_DIR
-    DELETE_TARGET_DIR=${DELETE_TARGET_DIR:-n}
-    if [[ "$DELETE_TARGET_DIR" == "y" || "$DELETE_TARGET_DIR" == "Y" ]]; then
-        echo "正在删除目录: $TARGET_DIR"
+    # 如果配置文件已加载，则直接删除并重新创建目录
+    if [ -f "$CONFIG_FILE" ]; then
+        echo "检测到配置文件已加载，直接删除并重新创建目录..."
         rm -rf "$TARGET_DIR"
-        echo "正在重新创建目录: $TARGET_DIR"
         mkdir -p "$TARGET_DIR"
     else
-        echo "保留现有目录，继续使用: $TARGET_DIR"
+        # 否则交互式询问用户
+        echo "是否删除并重新创建？(y/n，默认: n):"
+        read -r DELETE_TARGET_DIR
+        DELETE_TARGET_DIR=${DELETE_TARGET_DIR:-n}
+        if [[ "$DELETE_TARGET_DIR" == "y" || "$DELETE_TARGET_DIR" == "Y" ]]; then
+            echo "正在删除目录: $TARGET_DIR"
+            rm -rf "$TARGET_DIR"
+            echo "正在重新创建目录: $TARGET_DIR"
+            mkdir -p "$TARGET_DIR"
+        else
+            echo "保留现有目录，继续使用: $TARGET_DIR"
+        fi
     fi
 else
     echo "目标目录不存在，正在创建: $TARGET_DIR"
@@ -278,7 +302,7 @@ if [[ "$IS_CN_NETWORK" == true ]]; then
 else
     GITHUB_MIRROR="https://raw.githubusercontent.com"
 fi
-COMPOSE_FILE_URL="$GITHUB_MIRROR/PaloMiku/MxShell/refs/heads/main/core/docker-compose.yml" # 替换为实际文件路径
+COMPOSE_FILE_URL="$GITHUB_MIRROR/PaloMiku/MxShell/refs/heads/main/core/docker-compose.yml"
 echo "正在下载 Core 所需要的 Docker Compose 文件: 从 $COMPOSE_FILE_URL 下载到 $CORE_DIR/docker-compose.yml"
 wget -O "$CORE_DIR/docker-compose.yml" "$COMPOSE_FILE_URL"
 
@@ -379,34 +403,54 @@ else
 fi
 
 # 询问用户是否安装前端部分
-echo "是否需要安装前端主题？(y/n，默认: y):"
-read -r INSTALL_FRONTEND
-INSTALL_FRONTEND=${INSTALL_FRONTEND:-y}
+if [ -z "$FRONTEND_INSTALL" ]; then
+    echo "是否需要安装前端主题？(y/n，默认: y):"
+    read -r INSTALL_FRONTEND
+    INSTALL_FRONTEND=${INSTALL_FRONTEND:-y}
+else
+    echo "使用从配置文件加载的FRONTEND_INSTALL: $FRONTEND_INSTALL"
+    INSTALL_FRONTEND=$FRONTEND_INSTALL
+fi
 
 if [[ "$INSTALL_FRONTEND" == "y" || "$INSTALL_FRONTEND" == "Y" ]]; then
-    echo "请选择要安装的前端版本:"
-    echo "1) Shiro（开源版本)"
-    echo "2) Shiroi（闭源版本）"
-    read -p "请输入选项 (1/2，默认: 1): " FRONTEND_OPTION
-    FRONTEND_OPTION=${FRONTEND_OPTION:-1}
+    if [ -z "$FRONTEND_VERSION" ]; then
+        echo "请选择要安装的前端版本:"
+        echo "1) Shiro（开源版本)"
+        echo "2) Shiroi（闭源版本）"
+        read -p "请输入选项 (1/2，默认: 1): " FRONTEND_OPTION
+        FRONTEND_OPTION=${FRONTEND_OPTION:-1}
+        FRONTEND_VERSION=$(if [ "$FRONTEND_OPTION" -eq 1 ]; then echo "Shiro"; else echo "Shiroi"; fi)
+    else
+        echo "使用从配置文件加载的FRONTEND_VERSION: $FRONTEND_VERSION"
+    fi
 
     FRONTEND_DIR="$TARGET_DIR/frontend"
     if [ -d "$FRONTEND_DIR" ]; then
         echo "检测到前端目录已存在: $FRONTEND_DIR"
-        echo "是否删除并重新创建？(y/n，默认: n):"
-        read -r DELETE_FRONTEND_DIR
-        DELETE_FRONTEND_DIR=${DELETE_FRONTEND_DIR:-n}
-        if [[ "$DELETE_FRONTEND_DIR" == "y" || "$DELETE_FRONTEND_DIR" == "Y" ]]; then
-            echo "正在删除目录: $FRONTEND_DIR"
+        # 如果配置文件已加载，则直接删除并重新创建目录
+        if [ -f "$CONFIG_FILE" ]; then
+            echo "检测到配置文件已加载，直接删除并重新创建前端目录..."
             rm -rf "$FRONTEND_DIR"
+            mkdir -p "$FRONTEND_DIR"
         else
-            echo "保留现有目录，继续使用: $FRONTEND_DIR"
+            echo "是否删除并重新创建？(y/n，默认: n):"
+            read -r DELETE_FRONTEND_DIR
+            DELETE_FRONTEND_DIR=${DELETE_FRONTEND_DIR:-n}
+            if [[ "$DELETE_FRONTEND_DIR" == "y" || "$DELETE_FRONTEND_DIR" == "Y" ]]; then
+                echo "正在删除目录: $FRONTEND_DIR"
+                rm -rf "$FRONTEND_DIR"
+                mkdir -p "$FRONTEND_DIR"
+            else
+                echo "保留现有目录，继续使用: $FRONTEND_DIR"
+            fi
         fi
+    else
+        echo "前端目录不存在，正在创建: $FRONTEND_DIR"
+        mkdir -p "$FRONTEND_DIR"
     fi
-    mkdir -p "$FRONTEND_DIR"
 
-    case "$FRONTEND_OPTION" in
-        1)
+    case "$FRONTEND_VERSION" in
+        Shiro)
             # 安装Shiro
             if [[ "$IS_CN_NETWORK" == true ]]; then
                 GITHUB_MIRROR="https://github.moeyy.xyz/https://raw.githubusercontent.com"
@@ -427,33 +471,43 @@ if [[ "$INSTALL_FRONTEND" == "y" || "$INSTALL_FRONTEND" == "Y" ]]; then
             # 提示用户输入环境变量
             echo "请输入以下所需要环境变量的值："
 
-            while true; do
-                read -p "NEXT_PUBLIC_API_URL：请输入有效的 API URL: " NEXT_PUBLIC_API_URL
-                NEXT_PUBLIC_API_URL=$(echo "$NEXT_PUBLIC_API_URL" | sed 's/^ *//;s/ *$//')
-                if [[ "$NEXT_PUBLIC_API_URL" =~ ^https?:// ]]; then
-                    if [[ -n "$NEXT_PUBLIC_API_URL" && "$NEXT_PUBLIC_API_URL" =~ ^https?://([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,} ]]; then
-                        break
+            if [ -z "$FRONTEND_NEXT_PUBLIC_API_URL" ]; then
+                while true; do
+                    read -p "NEXT_PUBLIC_API_URL：请输入有效的 API URL: " NEXT_PUBLIC_API_URL
+                    NEXT_PUBLIC_API_URL=$(echo "$NEXT_PUBLIC_API_URL" | sed 's/^ *//;s/ *$//')
+                    if [[ "$NEXT_PUBLIC_API_URL" =~ ^https?:// ]]; then
+                        if [[ -n "$NEXT_PUBLIC_API_URL" && "$NEXT_PUBLIC_API_URL" =~ ^https?://([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,} ]]; then
+                            break
+                        else
+                            echo "输入无效，请输入有效的 API URL。"
+                        fi
                     else
-                        echo "输入无效，请输入有效的 API URL。"
+                        echo "输入无效，请包含http或https协议头。"
                     fi
-                else
-                    echo "输入无效，请包含http或https协议头。"
-                fi
-            done
+                done
+            else
+                echo "使用从配置文件加载的NEXT_PUBLIC_API_URL: $FRONTEND_NEXT_PUBLIC_API_URL"
+                NEXT_PUBLIC_API_URL=$FRONTEND_NEXT_PUBLIC_API_URL
+            fi
 
-            while true; do
-                read -p "NEXT_PUBLIC_GATEWAY_URL：请输入有效的 Gateway URL: " NEXT_PUBLIC_GATEWAY_URL
-                NEXT_PUBLIC_GATEWAY_URL=$(echo "$NEXT_PUBLIC_GATEWAY_URL" | sed 's/^ *//;s/ *$//')
-                if [[ "$NEXT_PUBLIC_GATEWAY_URL" =~ ^https?:// ]]; then
-                    if [[ -n "$NEXT_PUBLIC_GATEWAY_URL" && "$NEXT_PUBLIC_GATEWAY_URL" =~ ^https?://([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,} ]]; then
-                        break
+            if [ -z "$FRONTEND_NEXT_PUBLIC_GATEWAY_URL" ]; then
+                while true; do
+                    read -p "NEXT_PUBLIC_GATEWAY_URL：请输入有效的 Gateway URL: " NEXT_PUBLIC_GATEWAY_URL
+                    NEXT_PUBLIC_GATEWAY_URL=$(echo "$NEXT_PUBLIC_GATEWAY_URL" | sed 's/^ *//;s/ *$//')
+                    if [[ "$NEXT_PUBLIC_GATEWAY_URL" =~ ^https?:// ]]; then
+                        if [[ -n "$NEXT_PUBLIC_GATEWAY_URL" && "$NEXT_PUBLIC_GATEWAY_URL" =~ ^https?://([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,} ]]; then
+                            break
+                        else
+                            echo "输入无效，请输入有效的 Gateway URL。"
+                        fi
                     else
-                        echo "输入无效，请输入有效的 Gateway URL。"
+                        echo "输入无效，请包含http或https协议头。"
                     fi
-                else
-                    echo "输入无效，请包含http或https协议头。"
-                fi
-            done
+                done
+            else
+                echo "使用从配置文件加载的NEXT_PUBLIC_GATEWAY_URL: $FRONTEND_NEXT_PUBLIC_GATEWAY_URL"
+                NEXT_PUBLIC_GATEWAY_URL=$FRONTEND_NEXT_PUBLIC_GATEWAY_URL
+            fi
 
             cat > "$ENV_FILE" <<EOL
 NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
@@ -474,7 +528,7 @@ EOL
                 exit 1
             fi
             ;;
-        2)
+        Shiroi)
             # 安装Shiroi（闭源版本）
             echo "在安装Shiroi闭源版本之前，请确保你已捐赠并构建Shiroi的闭源镜像，可参考社区部署教程了解如何构建自己的Shiroi镜像。"
 
@@ -492,14 +546,19 @@ EOL
             fi
 
             # 提示用户输入 SHIRO_IMAGE 环境变量
-            while true; do
-                read -p "请输入 SHIRO_IMAGE（私有镜像） 的值（例如：your-dockerhub-username/shiroi:tag）: " SHIRO_IMAGE
-                if [[ "$SHIRO_IMAGE" =~ ^[a-z0-9]+([._-]?[a-z0-9]+)*\/[a-z0-9]+([._-]?[a-z0-9]+)*(:[a-zA-Z0-9._-]+)?$ ]]; then
-                    break
-                else
-                    echo "输入无效，请输入正确的 Docker 镜像格式（例如：your-dockerhub-username/shiroi:tag）。"
-                fi
-            done
+            if [ -z "$FRONTEND_SHIRO_IMAGE" ]; then
+                while true; do
+                    read -p "请输入 SHIRO_IMAGE（私有镜像） 的值（例如：your-dockerhub-username/shiroi:tag）: " SHIRO_IMAGE
+                    if [[ "$SHIRO_IMAGE" =~ ^[a-z0-9]+([._-]?[a-z0-9]+)*\/[a-z0-9]+([._-]?[a-z0-9]+)*(:[a-zA-Z0-9._-]+)?$ ]]; then
+                        break
+                    else
+                        echo "输入无效，请输入正确的 Docker 镜像格式（例如：your-dockerhub-username/shiroi:tag）。"
+                    fi
+                done
+            else
+                echo "使用从配置文件加载的SHIRO_IMAGE: $FRONTEND_SHIRO_IMAGE"
+                SHIRO_IMAGE=$FRONTEND_SHIRO_IMAGE
+            fi
 
             # 写入环境变量到 .env 文件
             ENV_FILE="$FRONTEND_DIR/.env"
