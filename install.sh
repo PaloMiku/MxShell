@@ -157,10 +157,23 @@ echo "请输入存储MixSpace容器文件的目录（默认: /opt/mxspace）："
 read -r TARGET_DIR
 TARGET_DIR=${TARGET_DIR:-/opt/mxspace}
 
-# 创建目标目录（如果不存在）
-if [ ! -d "$TARGET_DIR" ]; then
-  echo "目标目录不存在，正在创建: $TARGET_DIR"
-  mkdir -p "$TARGET_DIR"
+# 检查目标目录是否存在
+if [ -d "$TARGET_DIR" ]; then
+    echo "目标目录已存在: $TARGET_DIR"
+    echo "是否删除并重新创建？(y/n，默认: n):"
+    read -r DELETE_TARGET_DIR
+    DELETE_TARGET_DIR=${DELETE_TARGET_DIR:-n}
+    if [[ "$DELETE_TARGET_DIR" == "y" || "$DELETE_TARGET_DIR" == "Y" ]]; then
+        echo "正在删除目录: $TARGET_DIR"
+        rm -rf "$TARGET_DIR"
+        echo "正在重新创建目录: $TARGET_DIR"
+        mkdir -p "$TARGET_DIR"
+    else
+        echo "保留现有目录，继续使用: $TARGET_DIR"
+    fi
+else
+    echo "目标目录不存在，正在创建: $TARGET_DIR"
+    mkdir -p "$TARGET_DIR"
 fi
 
 # 下载指定的Docker Compose文件到指定目录的/core文件夹
