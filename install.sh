@@ -16,7 +16,7 @@ fi
 
 GREEN='\033[0;32m'
 NC='\033[0m'
-echo -e "${GREEN} MixSpace 一键安装脚本 版本：v1.0.0${NC}"
+echo -e "${GREEN} MixSpace 前后端一键安装脚本 版本：v1.0.0${NC}"
 
 # 检测是否为中国大陆网络环境
 USER_IP=$(curl -s --max-time 2 https://ipinfo.io/ip)
@@ -49,6 +49,41 @@ else
   exit 1
 fi
 echo "检测到系统发行版: $OS $VERSION"
+
+# 检查是否安装 python3
+if ! command -v python3 &> /dev/null; then
+    echo "未检测到 python3，正在安装..."
+    if [[ "$OS" == "centos" ]]; then
+        yum install -y python3
+    elif [[ "$OS" == "ubuntu" || "$OS" == "debian" ]]; then
+        apt-get update
+        apt-get install -y python3
+    else
+        echo "不支持的发行版: $OS"
+        exit 1
+    fi
+fi
+
+# 检查是否安装 pyyaml
+if ! python3 -c "import yaml" &> /dev/null; then
+    echo "未检测到 pyyaml，正在安装..."
+    python3 -m ensurepip --upgrade
+    python3 -m pip install pyyaml
+fi
+
+# 检查是否安装 wget
+if ! command -v wget &> /dev/null; then
+    echo "未检测到 wget，正在安装..."
+    if [[ "$OS" == "centos" ]]; then
+        yum install -y wget
+    elif [[ "$OS" == "ubuntu" || "$OS" == "debian" ]]; then
+        apt-get update
+        apt-get install -y wget
+    else
+        echo "不支持的发行版: $OS"
+        exit 1
+    fi
+fi
 
 # 检查是否已安装Docker
 if command -v docker &> /dev/null; then
@@ -203,52 +238,81 @@ else
   touch "$ENV_FILE"
 fi
 
-# 提示用户输入环境变量
-echo "请输入以下所需要环境变量的值："
+# 检查是否存在 mxconfig.yml 文件
+CONFIG_FILE="./mxconfig.yml"
+if [ -f "$CONFIG_FILE" ]; then
+    echo "检测到配置文件: $CONFIG_FILE，正在加载预配置的环境变量..."
+    eval $(yaml-parser "$CONFIG_FILE")
+else
+    echo "未检测到配置文件: $CONFIG_FILE，将使用交互式配置方式。"
+fi
 
-while true; do
-    read -p "JWT_SECRET：需要填写长度不小于 16 个字符，不大于 32 个字符的字符串，用于加密用户的 JWT，务必保存好自己的密钥，不要泄露给他人。按回车键随机生成一个16位的字符串: " JWT_SECRET
-    if [[ -z "$JWT_SECRET" ]]; then
-        JWT_SECRET=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 16 | head -n 1)
-        echo "已为您随机生成 JWT_SECRET: $JWT_SECRET"
-    fi
-    if [[ -n "$JWT_SECRET" && ${#JWT_SECRET} -ge 16 && ${#JWT_SECRET} -le 32 ]]; then
-        if [[ "$JWT_SECRET" =~ ^[a-zA-Z0-9].*[a-zA-Z0-9]$ ]]; then
-            break
+# 定义一个函数解析 YAML 文件
+yaml-parser() {
+    python3 -c "
+import yaml, sys
+with open('$1', 'r') as f:
+    config = yaml.safe_load(f)
+for key, value in config.items():
+    if isinstance(value, str):
+        print(f'{key}=\"{value}\"')
+    elif isinstance(value, list):
+        print(f'{key}=\"{','.join(value)}\"')
+    elif isinstance(value, dict):
+        print(f'{key}=\"{value}\"')
+    else:
+        print(f'{key}={value}')
+" 2>/dev/null
+}
+
+# 提示用户输入环境变量（如果未从配置文件加载）
+if [ -z "$JWT_SECRET" ]; then
+    while true; do
+        read -p "JWT_SECRET：需要填写长度不小于 16 个字符，不大于 32 个字符的字符串，用于加密用户的 JWT，务必保存好自己的密钥，不要泄露给他人。按回车键随机生成一个16位的字符串: " JWT_SECRET
+        if [[ -z "$JWT_SECRET" ]]; then
+            JWT_SECRET=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 16 | head -n 1)
+            echo "已为您随机生成 JWT_SECRET: $JWT_SECRET"
+        fi
+        if [[ -n "$JWT_SECRET" && ${#JWT_SECRET} -ge 16 && ${#JWT_SECRET} -le 32 ]]; then
+            if [[ "$JWT_SECRET" =~ ^[a-zA-Z0-9].*[a-zA-Z0-9]$ ]]; then
+                break
+            else
+                echo "输入无效，头尾不能包含特殊符号，请重新输入。"
+            fi
         else
-            echo "输入无效，头尾不能包含特殊符号，请重新输入。"
+            echo "输入无效，请输入长度为 16 到 32 个字符的字符串。"
         fi
-    else
-        echo "输入无效，请输入长度为 16 到 32 个字符的字符串。"
-    fi
-done
+    done
+fi
 
-while true; do
-    read -p "ALLOWED_ORIGINS：需要填写被允许访问的域名，通常是前端的域名，如果允许多个域名访问，用英文逗号分隔域名: " ALLOWED_ORIGINS
-    # 去除首尾空格
-    ALLOWED_ORIGINS=$(echo "$ALLOWED_ORIGINS" | sed 's/^ *//;s/ *$//')
-    # 拆分域名
-    IFS=',' read -ra DOMAINS <<< "$ALLOWED_ORIGINS"
-    valid=true
-    for domain in "${DOMAINS[@]}"; do
-        # 去除域名前后空格
-        domain=$(echo "$domain" | sed 's/^ *//;s/ *$//')
-        # 检查是否包含http协议头
-        if [[ "$domain" =~ ^https?:// ]]; then
-            valid=false
-            echo "输入无效，请不要包含http协议头，请重新输入。"
-            break
-        fi
-        if [[ -z "$domain" ||! "$domain" =~ ^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$ ]]; then
-            valid=false
-            echo "输入无效，请输入至少一个有效的域名，多个域名请用英文逗号分隔。"
+if [ -z "$ALLOWED_ORIGINS" ]; then
+    while true; do
+        read -p "ALLOWED_ORIGINS：需要填写被允许访问的域名，通常是前端的域名，如果允许多个域名访问，用英文逗号分隔域名: " ALLOWED_ORIGINS
+        # 去除首尾空格
+        ALLOWED_ORIGINS=$(echo "$ALLOWED_ORIGINS" | sed 's/^ *//;s/ *$//')
+        # 拆分域名
+        IFS=',' read -ra DOMAINS <<< "$ALLOWED_ORIGINS"
+        valid=true
+        for domain in "${DOMAINS[@]}"; do
+            # 去除域名前后空格
+            domain=$(echo "$domain" | sed 's/^ *//;s/ *$//')
+            # 检查是否包含http协议头
+            if [[ "$domain" =~ ^https?:// ]]; then
+                valid=false
+                echo "输入无效，请不要包含http协议头，请重新输入。"
+                break
+            fi
+            if [[ -z "$domain" ||! "$domain" =~ ^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$ ]]; then
+                valid=false
+                echo "输入无效，请输入至少一个有效的域名，多个域名请用英文逗号分隔。"
+                break
+            fi
+        done
+        if $valid; then
             break
         fi
     done
-    if $valid; then
-        break
-    fi
-done
+fi
 
 # 写入环境变量到 .env 文件
 cat > "$ENV_FILE" <<EOL

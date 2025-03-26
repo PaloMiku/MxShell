@@ -1,0 +1,19 @@
+# JWT 密钥，用于加密用户的 JWT，长度需为 16 到 32 个字符
+JWT_SECRET: "your_jwt_secret_here"
+
+# 允许访问的域名，多个域名用英文逗号分隔
+ALLOWED_ORIGINS: "example.com,api.example.com"
+
+# Docker 镜像源配置
+DOCKER_MIRROR: "https://docker.1ms.run"
+
+# MixSpace 容器文件存储目录
+TARGET_DIR: "/opt/mxspace"
+
+# 前端配置
+FRONTEND:
+  INSTALL: true
+  VERSION: "Shiro" # 可选值: Shiro 或 Shiroi
+  NEXT_PUBLIC_API_URL: "https://api.example.com"
+  NEXT_PUBLIC_GATEWAY_URL: "https://gateway.example.com"
+  SHIRO_IMAGE: "your-dockerhub-username/shiroi:tag" # 仅在 Shiroi 版本时需要
