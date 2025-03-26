@@ -208,10 +208,16 @@ fi
 CONFIG_FILE="./mxconfig.yml"
 if [ -f "$CONFIG_FILE" ]; then
     echo "检测到配置文件: $CONFIG_FILE，正在加载预配置的环境变量..."
+    # 加载配置到环境变量
     eval $(yaml-parser "$CONFIG_FILE")
     if [ $? -ne 0 ]; then
         echo "加载配置文件失败，请检查 mxconfig.yml 格式是否正确。"
         exit 1
+    else
+        echo "成功从配置文件加载以下变量:"
+        # 显示加载的环境变量
+        if [ -n "$JWT_SECRET" ]; then echo "- JWT_SECRET (已设置)"; fi
+        if [ -n "$ALLOWED_ORIGINS" ]; then echo "- ALLOWED_ORIGINS: $ALLOWED_ORIGINS"; fi
     fi
 else
     echo "未检测到配置文件: $CONFIG_FILE，将使用交互式配置方式。"
@@ -268,9 +274,9 @@ else
   touch "$ENV_FILE"
 fi
 
-
 # 提示用户输入环境变量（如果未从配置文件加载）
 if [ -z "$JWT_SECRET" ]; then
+    echo "从配置中未检测到JWT_SECRET，需要手动输入..."
     while true; do
         read -p "JWT_SECRET：需要填写长度不小于 16 个字符，不大于 32 个字符的字符串，用于加密用户的 JWT，务必保存好自己的密钥，不要泄露给他人。按回车键随机生成一个16位的字符串: " JWT_SECRET
         if [[ -z "$JWT_SECRET" ]]; then
@@ -287,9 +293,12 @@ if [ -z "$JWT_SECRET" ]; then
             echo "输入无效，请输入长度为 16 到 32 个字符的字符串。"
         fi
     done
+else
+    echo "使用从配置文件加载的JWT_SECRET..."
 fi
 
 if [ -z "$ALLOWED_ORIGINS" ]; then
+    echo "从配置中未检测到ALLOWED_ORIGINS，需要手动输入..."
     while true; do
         read -p "ALLOWED_ORIGINS：需要填写被允许访问的域名，通常是前端的域名，如果允许多个域名访问，用英文逗号分隔域名: " ALLOWED_ORIGINS
         # 去除首尾空格
@@ -316,6 +325,8 @@ if [ -z "$ALLOWED_ORIGINS" ]; then
             break
         fi
     done
+else
+    echo "使用从配置文件加载的ALLOWED_ORIGINS: $ALLOWED_ORIGINS"
 fi
 
 # 写入环境变量到 .env 文件
