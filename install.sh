@@ -183,19 +183,25 @@ fi
 # 定义一个函数解析 YAML 文件
 yaml-parser() {
     python3 -c "
-import yaml, sys
-with open('$1', 'r') as f:
-    config = yaml.safe_load(f)
-for key, value in config.items():
-    if isinstance(value, str):
-        print(f'{key}=\"{value}\"')
-    elif isinstance(value, list):
-        print(f'{key}=\"{','.join(value)}\"')
-    elif isinstance(value, dict):
-        print(f'{key}=\"{value}\"')
-    else:
-        print(f'{key}={value}')
-" 2>/dev/null
+import yaml, sys, json
+try:
+    with open('$1', 'r') as f:
+        config = yaml.safe_load(f)
+    for key, value in config.items():
+        if isinstance(value, str):
+            print(f'{key}=\"{value}\"')
+        elif isinstance(value, list):
+            print(f'{key}=\"{','.join([str(x) for x in value])}\"')
+        elif isinstance(value, dict):
+            print(f'{key}=\"{json.dumps(value)}\"')
+        elif value is None:
+            print(f'{key}=\"\"')
+        else:
+            print(f'{key}={value}')
+except Exception as e:
+    print(f'解析错误: {str(e)}', file=sys.stderr)
+    sys.exit(1)
+"
 }
 
 # 检查 yaml-parser 函数是否可用
@@ -208,16 +214,33 @@ fi
 CONFIG_FILE="./mxconfig.yml"
 if [ -f "$CONFIG_FILE" ]; then
     echo "检测到配置文件: $CONFIG_FILE，正在加载预配置的环境变量..."
-    # 加载配置到环境变量
-    eval $(yaml-parser "$CONFIG_FILE")
+    # 先将解析结果输出到临时文件以便调试
+    TEMP_ENV_FILE=$(mktemp)
+    yaml-parser "$CONFIG_FILE" > "$TEMP_ENV_FILE"
+    
     if [ $? -ne 0 ]; then
-        echo "加载配置文件失败，请检查 mxconfig.yml 格式是否正确。"
+        echo "解析配置文件失败，请检查 mxconfig.yml 格式是否正确。"
+        cat "$TEMP_ENV_FILE"
+        rm -f "$TEMP_ENV_FILE"
         exit 1
-    else
-        echo "成功从配置文件加载以下变量:"
-        # 显示加载的环境变量
-        if [ -n "$JWT_SECRET" ]; then echo "- JWT_SECRET (已设置)"; fi
-        if [ -n "$ALLOWED_ORIGINS" ]; then echo "- ALLOWED_ORIGINS: $ALLOWED_ORIGINS"; fi
+    fi
+    
+    echo "解析的配置内容:"
+    cat "$TEMP_ENV_FILE"
+    
+    # 加载配置到环境变量
+    source "$TEMP_ENV_FILE"
+    rm -f "$TEMP_ENV_FILE"
+    
+    echo "成功从配置文件加载以下变量:"
+    # 显示加载的环境变量
+    if [ -n "$JWT_SECRET" ]; then echo "- JWT_SECRET: (已设置，值已隐藏)"; fi
+    if [ -n "$ALLOWED_ORIGINS" ]; then echo "- ALLOWED_ORIGINS: $ALLOWED_ORIGINS"; fi
+    
+    # 检查关键变量是否已加载
+    if [ -z "$JWT_SECRET" ] && [ -z "$ALLOWED_ORIGINS" ]; then
+        echo "警告: 未能从配置文件加载任何预期的变量，可能配置文件格式不正确。"
+        echo "将切换到交互式配置方式。"
     fi
 else
     echo "未检测到配置文件: $CONFIG_FILE，将使用交互式配置方式。"
