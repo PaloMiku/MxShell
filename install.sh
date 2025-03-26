@@ -151,40 +151,27 @@ else
     fi
 fi
 
-# 询问用户是否需要设置Docker国内源
-echo "是否需要设置Docker镜像源？(y/n，默认: y):"
-read -r SET_DOCKER_MIRROR
-SET_DOCKER_MIRROR=${SET_DOCKER_MIRROR:-y}
-
-if [[ "$SET_DOCKER_MIRROR" == "y" || "$SET_DOCKER_MIRROR" == "Y" ]]; then
-    echo "请选择一个镜像源:"
-    echo "1) https://docker.1ms.run （毫秒镜像）"
-    echo "2) https://hub.rat.dev/ （耗子镜像）"
-    read -p "请输入选项 (1/2，默认: 1): " MIRROR_OPTION
-    MIRROR_OPTION=${MIRROR_OPTION:-1}
-
-    if [[ "$MIRROR_OPTION" == "1" ]]; then
-        MIRROR_URL="https://docker.1ms.run"
-    elif [[ "$MIRROR_OPTION" == "2" ]]; then
-        MIRROR_URL="https://hub.rat.dev"
-    else
-        echo "无效选项，使用Docker官方源。"
-        MIRROR_URL="https://registry-1.docker.io"
-    fi
+# 根据网络环境设置Docker镜像源
+if [[ "$IS_CN_NETWORK" == true ]]; then
+    echo "检测到中国大陆网络环境，正在配置Docker国内镜像源..."
 
     # 配置Docker国内源
-    echo "正在配置Docker镜像源: $MIRROR_URL"
     mkdir -p /etc/docker
     cat > /etc/docker/daemon.json <<EOL
 {
-    "registry-mirrors": ["$MIRROR_URL"]
+    "registry-mirrors": [
+        "https://docker.1ms.run",
+        "https://hub.rat.dev"
+    ]
 }
 EOL
 
     # 重启Docker服务以应用配置
     systemctl daemon-reload
     systemctl restart docker
-    echo "Docker国内源配置完成！"
+    echo "Docker国内镜像源配置完成！"
+else
+    echo "检测到非中国大陆网络环境，无需设置Docker镜像源。"
 fi
 
 # 用户选择目录
