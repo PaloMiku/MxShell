@@ -180,15 +180,6 @@ else
     echo "检测到非中国大陆网络环境，无需设置Docker镜像源。"
 fi
 
-# 检查是否存在 mxconfig.yml 文件
-CONFIG_FILE="./mxconfig.yml"
-if [ -f "$CONFIG_FILE" ]; then
-    echo "检测到配置文件: $CONFIG_FILE，正在加载预配置的环境变量..."
-    eval $(yaml-parser "$CONFIG_FILE")
-else
-    echo "未检测到配置文件: $CONFIG_FILE，将使用交互式配置方式。"
-fi
-
 # 定义一个函数解析 YAML 文件
 yaml-parser() {
     python3 -c "
@@ -206,6 +197,26 @@ for key, value in config.items():
         print(f'{key}={value}')
 " 2>/dev/null
 }
+
+# 检查 yaml-parser 函数是否可用
+if ! declare -f yaml-parser &> /dev/null; then
+    echo "yaml-parser 函数未定义，可能缺少依赖，请检查脚本或安装必要的依赖。"
+    exit 1
+fi
+
+# 检查是否存在 mxconfig.yml 文件
+CONFIG_FILE="./mxconfig.yml"
+if [ -f "$CONFIG_FILE" ]; then
+    echo "检测到配置文件: $CONFIG_FILE，正在加载预配置的环境变量..."
+    eval $(yaml-parser "$CONFIG_FILE")
+    if [ $? -ne 0 ]; then
+        echo "加载配置文件失败，请检查 mxconfig.yml 格式是否正确。"
+        exit 1
+    fi
+else
+    echo "未检测到配置文件: $CONFIG_FILE，将使用交互式配置方式。"
+fi
+
 # 用户选择目录
 echo "请输入存储MixSpace容器文件的目录（默认: /opt/mxspace）："
 read -r TARGET_DIR
