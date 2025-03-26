@@ -32,6 +32,7 @@ curl -sSL https://github.moeyy.xyz/https://raw.githubusercontent.com/PaloMiku/Mx
 
 - 目前仅对运行着Debian，Ubuntu，CentOS服务器提供支持
 - 这个脚本目前经历的使用测试依旧较少（2025.03.26），如有问题请及时反馈（issue），如果你能解决建议直接 Pull（）
+- 本脚本目前仅提供通过 Docker 部署的 MixSpace 前后端容器程序，不提供反代和进阶部署配置。
 ---
 
 This uwu logo was created by [Arthals](https://github.com/zhuozhiyongde) and all rights reserved.
