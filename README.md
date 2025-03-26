@@ -4,9 +4,20 @@
 
 ## 食用
 
+### 海外服务器
+
 ```bash
 curl -sSL https://raw.githubusercontent.com/PaloMiku/MxShell/refs/heads/main/install.sh -o install.sh && bash install.sh
 ```
+
+### 国内服务器
+
+使用Moeyy的Github加速源。
+
+```bash
+curl -sSL https://github.moeyy.xyz/https://raw.githubusercontent.com/PaloMiku/MxShell/refs/heads/main/install.sh -o install.sh && bash install.sh
+```
+
 目前它能做到的：
 
 - 自动切换Docker安装源和镜像源
