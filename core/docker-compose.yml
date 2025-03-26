@@ -1,0 +1,58 @@
+version: '3.8'
+services:
+  app:
+    container_name: mx-server
+    image: innei/mx-server:latest
+    env_file:
+      - ./.env
+    environment:
+      - TZ=Asia/Shanghai
+      - NODE_ENV=production
+      - DB_HOST=mongo
+      - REDIS_HOST=redis
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      - JWT_SECRET=${JWT_SECRET}
+    volumes:
+      - ./data/mx-space:/root/.mx-space
+    ports:
+      - '2333:2333'
+    depends_on:
+      - mongo
+      - redis
+    networks:
+      - mx-space
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://127.0.0.1:2333/api/v2/ping']
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+
+  mongo:
+    container_name: mongo
+    image: mongo
+    volumes:
+      - ./data/db:/data/db
+    networks:
+      - mx-space
+    restart: unless-stopped
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    volumes:
+      - ./data/redis:/data
+    healthcheck:
+      test: ['CMD-SHELL', 'redis-cli ping | grep PONG']
+      start_period: 20s
+      interval: 30s
+      retries: 5
+      timeout: 3s
+    networks:
+      - mx-space
+    restart: unless-stopped
+
+networks:
+  mx-space:
+    driver: bridge
