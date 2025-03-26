@@ -611,5 +611,10 @@ EOL
                 exit 1
             fi
             ;;
+
     esac
+    # 提示用户安装成功并输出当前时间（基于UTC+8）
+    echo "前端安装成功！"
+    echo "MixSpace 已经安装在你的服务器上，你可以参考官方文档自行配置反向代理。"
+    echo "当前时间（UTC+8）：$(date -u -d '+8 hours' '+%Y-%m-%d %H:%M:%S')"
 fi
