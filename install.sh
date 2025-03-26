@@ -409,7 +409,14 @@ if [ -z "$FRONTEND_INSTALL" ]; then
     INSTALL_FRONTEND=${INSTALL_FRONTEND:-y}
 else
     echo "使用从配置文件加载的FRONTEND_INSTALL: $FRONTEND_INSTALL"
-    INSTALL_FRONTEND=$FRONTEND_INSTALL
+    # 将布尔值转换为 y/n 格式
+    if [[ "$FRONTEND_INSTALL" == "true" || "$FRONTEND_INSTALL" == "True" || "$FRONTEND_INSTALL" == "TRUE" ]]; then
+        INSTALL_FRONTEND="y"
+    elif [[ "$FRONTEND_INSTALL" == "false" || "$FRONTEND_INSTALL" == "False" || "$FRONTEND_INSTALL" == "FALSE" ]]; then
+        INSTALL_FRONTEND="n"
+    else
+        INSTALL_FRONTEND=$FRONTEND_INSTALL
+    fi
 fi
 
 if [[ "$INSTALL_FRONTEND" == "y" || "$INSTALL_FRONTEND" == "Y" ]]; then
