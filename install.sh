@@ -272,11 +272,22 @@ if [[ "$INSTALL_FRONTEND" == "y" || "$INSTALL_FRONTEND" == "Y" ]]; then
     echo "请选择要安装的前端版本:"
     echo "1) Shiro（开源版本)"
     echo "2) Shiroi（闭源版本）"
-    echo "3) Kami（最小程度维护）"
-    read -p "请输入选项 (1/2/3，默认: 1): " FRONTEND_OPTION
+    read -p "请输入选项 (1/2，默认: 1): " FRONTEND_OPTION
     FRONTEND_OPTION=${FRONTEND_OPTION:-1}
 
     FRONTEND_DIR="$TARGET_DIR/frontend"
+    if [ -d "$FRONTEND_DIR" ]; then
+        echo "检测到前端目录已存在: $FRONTEND_DIR"
+        echo "是否删除并重新创建？(y/n，默认: n):"
+        read -r DELETE_FRONTEND_DIR
+        DELETE_FRONTEND_DIR=${DELETE_FRONTEND_DIR:-n}
+        if [[ "$DELETE_FRONTEND_DIR" == "y" || "$DELETE_FRONTEND_DIR" == "Y" ]]; then
+            echo "正在删除目录: $FRONTEND_DIR"
+            rm -rf "$FRONTEND_DIR"
+        else
+            echo "保留现有目录，继续使用: $FRONTEND_DIR"
+        fi
+    fi
     mkdir -p "$FRONTEND_DIR"
 
     case "$FRONTEND_OPTION" in
@@ -287,7 +298,7 @@ if [[ "$INSTALL_FRONTEND" == "y" || "$INSTALL_FRONTEND" == "Y" ]]; then
             else
                 GITHUB_MIRROR="https://raw.githubusercontent.com"
             fi
-            COMPOSE_FILE_URL="$GITHUB_MIRROR/Innei/Shiro/refs/heads/main/docker-compose.yml"
+            COMPOSE_FILE_URL="$GITHUB_MIRROR/PaloMiku/MxShell/refs/heads/main/shiro/docker-compose.yml"
             echo "正在下载 Shiro 所需要的 Docker Compose 文件: 从 $COMPOSE_FILE_URL 下载到 $FRONTEND_DIR/docker-compose.yml"
             wget -O "$FRONTEND_DIR/docker-compose.yml" "$COMPOSE_FILE_URL"
             if [ $? -ne 0 ]; then
@@ -303,9 +314,7 @@ if [[ "$INSTALL_FRONTEND" == "y" || "$INSTALL_FRONTEND" == "Y" ]]; then
 
             while true; do
                 read -p "NEXT_PUBLIC_API_URL：请输入有效的 API URL: " NEXT_PUBLIC_API_URL
-                # 去除首尾空格
                 NEXT_PUBLIC_API_URL=$(echo "$NEXT_PUBLIC_API_URL" | sed 's/^ *//;s/ *$//')
-                # 检查是否包含http协议头
                 if [[ "$NEXT_PUBLIC_API_URL" =~ ^https?:// ]]; then
                     if [[ -n "$NEXT_PUBLIC_API_URL" && "$NEXT_PUBLIC_API_URL" =~ ^https?://([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,} ]]; then
                         break
@@ -319,9 +328,7 @@ if [[ "$INSTALL_FRONTEND" == "y" || "$INSTALL_FRONTEND" == "Y" ]]; then
 
             while true; do
                 read -p "NEXT_PUBLIC_GATEWAY_URL：请输入有效的 Gateway URL: " NEXT_PUBLIC_GATEWAY_URL
-                # 去除首尾空格
                 NEXT_PUBLIC_GATEWAY_URL=$(echo "$NEXT_PUBLIC_GATEWAY_URL" | sed 's/^ *//;s/ *$//')
-                # 检查是否包含http协议头
                 if [[ "$NEXT_PUBLIC_GATEWAY_URL" =~ ^https?:// ]]; then
                     if [[ -n "$NEXT_PUBLIC_GATEWAY_URL" && "$NEXT_PUBLIC_GATEWAY_URL" =~ ^https?://([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,} ]]; then
                         break
@@ -333,28 +340,12 @@ if [[ "$INSTALL_FRONTEND" == "y" || "$INSTALL_FRONTEND" == "Y" ]]; then
                 fi
             done
 
-cat > "$ENV_FILE" <<EOL
+            cat > "$ENV_FILE" <<EOL
 NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 NEXT_PUBLIC_GATEWAY_URL=$NEXT_PUBLIC_GATEWAY_URL
+SHIRO_IMAGE=innei/shiro:latest
 ENABLE_EXPERIMENTAL_COREPACK=1
 EOL
-
-            # 启动Shiro容器
-            echo "正在启动 Shiro 容器..."
-            cd "$FRONTEND_DIR"
-            docker-compose up -d
-
-            if [ $? -eq 0 ]; then
-                echo "Shiro 前端容器已成功启动！"
-            else
-                echo "Shiro 前端容器启动失败，请检查日志。"
-                exit 1
-            fi
-
-            if [ $? -ne 0 ]; then
-                echo "下载 Shiro 需求的 Docker Compose 文件失败！请检查环境网络连接。"
-                exit 1
-            fi
 
             # 启动Shiro容器
             echo "正在启动 Shiro 容器..."
@@ -370,39 +361,74 @@ EOL
             ;;
         2)
             # 安装Shiroi（闭源版本）
-            echo "在安装Shiroi闭源版本之前，请确保你已捐赠并构建Shiroi的闭源镜像，可参考官方文档了解如何构建镜像。"
-            ;;
-        3)
-            # 安装Kami
+            echo "在安装Shiroi闭源版本之前，请确保你已捐赠并构建Shiroi的闭源镜像，可参考社区部署教程了解如何构建自己的Shiroi镜像。"
+
             if [[ "$IS_CN_NETWORK" == true ]]; then
                 GITHUB_MIRROR="https://github.moeyy.xyz/https://raw.githubusercontent.com"
             else
                 GITHUB_MIRROR="https://raw.githubusercontent.com"
             fi
-            COMPOSE_FILE_URL="$GITHUB_MIRROR/PaloMiku/MxShell/refs/heads/main/frontend/kami/docker-compose.yml"
-            echo "正在下载 Kami 所需要的 Docker Compose 文件: 从 $COMPOSE_FILE_URL 下载到 $FRONTEND_DIR/docker-compose.yml"
+            COMPOSE_FILE_URL="$GITHUB_MIRROR/Innei/Shiro/refs/heads/main/docker-compose.yml"
+            echo "正在下载 Shiro 所需要的 Docker Compose 文件: 从 $COMPOSE_FILE_URL 下载到 $FRONTEND_DIR/docker-compose.yml"
             wget -O "$FRONTEND_DIR/docker-compose.yml" "$COMPOSE_FILE_URL"
-
             if [ $? -ne 0 ]; then
-                echo "下载 Kami 需求的 Docker Compose 文件失败！请检查环境网络连接。"
+                echo "下载 Shiro 需求的 Docker Compose 文件失败！请检查环境网络连接。"
                 exit 1
             fi
 
-            # 启动Kami容器
-            echo "正在启动 Kami 容器..."
+            # 提示用户输入 SHIRO_IMAGE 环境变量
+            while true; do
+                read -p "请输入 SHIRO_IMAGE（私有镜像） 的值（例如：your-dockerhub-username/shiroi:tag）: " SHIRO_IMAGE
+                if [[ "$SHIRO_IMAGE" =~ ^[a-z0-9]+([._-]?[a-z0-9]+)*\/[a-z0-9]+([._-]?[a-z0-9]+)*(:[a-zA-Z0-9._-]+)?$ ]]; then
+                    break
+                else
+                    echo "输入无效，请输入正确的 Docker 镜像格式（例如：your-dockerhub-username/shiroi:tag）。"
+                fi
+            done
+
+            # 写入环境变量到 .env 文件
+            ENV_FILE="$FRONTEND_DIR/.env"
+            echo "SHIRO_IMAGE=$SHIRO_IMAGE" >> "$ENV_FILE"
+            echo "SHIRO_IMAGE 环境变量已设置为: $SHIRO_IMAGE"
+
+            # 询问用户是否需要登录 Docker 私有仓库
+            echo "是否需要登录 Docker 私有仓库？(y/n，默认: n):"
+            read -r LOGIN_PRIVATE_REGISTRY
+            LOGIN_PRIVATE_REGISTRY=${LOGIN_PRIVATE_REGISTRY:-n}
+
+            if [[ "$LOGIN_PRIVATE_REGISTRY" == "y" || "$LOGIN_PRIVATE_REGISTRY" == "Y" ]]; then
+                echo "请输入 Docker 私有仓库地址（默认: ghcr.io）:"
+                read -r PRIVATE_REGISTRY
+                PRIVATE_REGISTRY=${PRIVATE_REGISTRY:-ghcr.io}
+
+                echo "请输入 Docker 私有仓库的用户名:"
+                read -r REGISTRY_USERNAME
+
+                echo "请输入 Docker 私有仓库的密码:"
+                read -sr REGISTRY_PASSWORD
+
+                echo "正在登录 Docker 私有仓库: $PRIVATE_REGISTRY"
+                echo "$REGISTRY_PASSWORD" | docker login "$PRIVATE_REGISTRY" -u "$REGISTRY_USERNAME" --password-stdin
+
+                if [ $? -eq 0 ]; then
+                    echo "成功登录 Docker 私有仓库: $PRIVATE_REGISTRY"
+                else
+                    echo "登录 Docker 私有仓库失败，请检查用户名和密码。"
+                    exit 1
+                fi
+            fi
+
+            # 启动 Shiroi 容器
+            echo "正在启动 Shiroi 容器..."
             cd "$FRONTEND_DIR"
             docker-compose up -d
 
             if [ $? -eq 0 ]; then
-                echo "Kami 前端容器已成功启动！"
+                echo "Shiroi 前端容器已成功启动！"
             else
-                echo "Kami 前端容器启动失败，请检查日志。"
+                echo "Shiroi 前端容器启动失败，请检查日志。"
                 exit 1
             fi
             ;;
-        *)
-            echo "无效选项，跳过前端安装。"
-            ;;
     esac
 fi
-
