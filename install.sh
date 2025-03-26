@@ -51,7 +51,9 @@ fi
 echo "检测到系统发行版: $OS $VERSION"
 
 # 检查是否安装 python3
-if ! command -v python3 &> /dev/null; then
+if command -v python3 &> /dev/null; then
+    echo "已检测到 python3，版本: $(python3 --version)"
+else
     echo "未检测到 python3，正在安装..."
     if [[ "$OS" == "centos" ]]; then
         yum install -y python3
@@ -65,14 +67,18 @@ if ! command -v python3 &> /dev/null; then
 fi
 
 # 检查是否安装 pyyaml
-if ! python3 -c "import yaml" &> /dev/null; then
+if python3 -c "import yaml" &> /dev/null; then
+    echo "已检测到 pyyaml 模块。"
+else
     echo "未检测到 pyyaml，正在安装..."
     python3 -m ensurepip --upgrade
     python3 -m pip install pyyaml
 fi
 
 # 检查是否安装 wget
-if ! command -v wget &> /dev/null; then
+if command -v wget &> /dev/null; then
+    echo "已检测到 wget，版本: $(wget --version | head -n 1)"
+else
     echo "未检测到 wget，正在安装..."
     if [[ "$OS" == "centos" ]]; then
         yum install -y wget
