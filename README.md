@@ -26,7 +26,15 @@ curl -sSL https://github.moeyy.xyz/https://raw.githubusercontent.com/PaloMiku/Mx
 
 ## 无人值守（预配置）
 
-参考[官方文档](https://mx-space.js.org)和内标注释修改`mxconfig.yml`文件，并把其放置在与脚本统一目录后执行脚本。
+参考[官方文档](https://mx-space.js.org)和内标注释修改本仓库的`mxconfig.yml`文件，并将其放置在与脚本同一目录后执行脚本。
+
+## Todo
+
+[ ] 交互式生成无人值守的配置文件，让部署更简单！
+
+[ ] 实现更多部署方式，未来可能性可选的反代协助配置。
+
+[ ] 支持更多系统架构。
 
 ## 注意
 
