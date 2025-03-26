@@ -19,7 +19,7 @@ curl -sSL https://raw.githubusercontent.com/PaloMiku/MxShell/refs/heads/main/ins
 
 ## 注意
 
-- 目前仅对Debian，Ubuntu，CentOS服务器提供支持
+- 目前仅对运行着Debian，Ubuntu，CentOS服务器提供支持
 - 这个脚本目前经历的使用测试依旧较少（2025.03.26），如有问题请及时反馈（issue），如果你能解决建议直接 Pull（）
 ---
 
