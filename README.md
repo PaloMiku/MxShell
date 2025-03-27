@@ -30,7 +30,6 @@ curl -sSL https://github.moeyy.xyz/https://raw.githubusercontent.com/PaloMiku/Mx
 
 ## 待办事项
 
-- [ ] 提供交互式生成无人值守配置文件的功能，简化部署流程
 - [ ] 支持更多部署方式，并可能增加反向代理配置的选项
 - [ ] 扩展对更多系统架构的支持
 
