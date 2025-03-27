@@ -26,7 +26,7 @@ curl -sSL https://github.moeyy.xyz/https://raw.githubusercontent.com/PaloMiku/Mx
 
 ## 无人值守（预配置）
 
-请参考[官方文档](https://mx-space.js.org)以及脚本内的注释，修改本仓库中的 `mxconfig.yml` 文件，并将其与脚本置于同一目录后运行脚本。
+请参考[官方文档](https://mx-space.js.org)以及脚本内的注释，修改本仓库中的 `mxconfig.yml` 文件，并将其与脚本置于同一目录后运行脚本，脚本会根据配置文件内容自动完成前后端部署。
 
 ## 待办事项
 
