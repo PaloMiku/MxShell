@@ -13,6 +13,6 @@ TARGET_DIR: "/opt/mxspace"
 FRONTEND:
   INSTALL: true
   VERSION: "Shiro" # 可选值: Shiro 或 Shiroi
-  NEXT_PUBLIC_API_URL: "https://api.example.com"
-  NEXT_PUBLIC_GATEWAY_URL: "https://gateway.example.com"
+  NEXT_PUBLIC_API_URL: "http://127.0.0.1:2333/api/v2"
+  NEXT_PUBLIC_GATEWAY_URL: "http://127.0.0.1:2333/"
   SHIRO_IMAGE: "your-dockerhub-username/shiroi:tag" # 仅在 Shiroi 版本时需要
