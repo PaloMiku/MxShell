@@ -281,7 +281,7 @@ else
 fi
 COMPOSE_FILE_URL="$GITHUB_MIRROR/PaloMiku/MxShell/refs/heads/main/core/docker compose.yml"
 echo "正在下载 Core 所需要的 Docker Compose 文件: 从 $COMPOSE_FILE_URL 下载到 $CORE_DIR/docker compose.yml"
-wget -O "$CORE_DIR/docker compose.yml" "$COMPOSE_FILE_URL"
+wget -O "$CORE_DIR/docker-compose.yml" "$COMPOSE_FILE_URL"
 
 # 检查下载是否成功
 if [ $? -ne 0 ]; then
@@ -362,7 +362,7 @@ EOL
 echo "环境变量设置完成！"
 
 # 检查容器是否已运行
-if docker compose -f "$CORE_DIR/docker compose.yml" ps | grep -q 'Up'; then
+if docker compose -f "$CORE_DIR/docker-compose.yml" ps | grep -q 'Up'; then
     echo "Core 核心容器已在运行，跳过启动步骤。"
 else
     # 启动容器
@@ -824,7 +824,7 @@ EOL
 echo "环境变量设置完成！"
 
 # 检查容器是否已运行
-if docker compose -f "$CORE_DIR/docker compose.yml" ps | grep -q 'Up'; then
+if docker compose -f "$CORE_DIR/docker-compose.yml" ps | grep -q 'Up'; then
     echo "Core 核心容器已在运行，跳过启动步骤。"
 else
     # 启动容器
@@ -983,9 +983,9 @@ EOL
             else
                 GITHUB_MIRROR="https://raw.githubusercontent.com"
             fi
-            COMPOSE_FILE_URL="$GITHUB_MIRROR/Innei/Shiro/refs/heads/main/docker compose.yml"
-            echo "正在下载 Shiro 所需要的 Docker Compose 文件: 从 $COMPOSE_FILE_URL 下载到 $FRONTEND_DIR/docker compose.yml"
-            wget -O "$FRONTEND_DIR/docker compose.yml" "$COMPOSE_FILE_URL"
+            COMPOSE_FILE_URL="$GITHUB_MIRROR/Innei/Shiro/refs/heads/main/docker-compose.yml"
+            echo "正在下载 Shiro 所需要的 Docker Compose 文件: 从 $COMPOSE_FILE_URL 下载到 $FRONTEND_DIR/docker-compose.yml"
+            wget -O "$FRONTEND_DIR/docker-compose.yml" "$COMPOSE_FILE_URL"
             if [ $? -ne 0 ]; then
                 echo "下载 Shiro 需求的 Docker Compose 文件失败！请检查环境网络连接。"
                 exit 1
@@ -1041,7 +1041,7 @@ EOL
             # 启动 Shiroi 容器
             echo "正在启动 Shiroi 容器..."
             cd "$FRONTEND_DIR"
-            docker compose up -d
+             up -d
 
             if [ $? -eq 0 ]; then
                 echo "Shiroi 前端容器已成功启动！"
