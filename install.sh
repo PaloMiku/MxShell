@@ -441,7 +441,7 @@ if [[ "$INSTALL_FRONTEND" == "y" || "$INSTALL_FRONTEND" == "Y" ]]; then
             else
                 GITHUB_MIRROR="https://raw.githubusercontent.com"
             fi
-            COMPOSE_FILE_URL="$GITHUB_MIRROR/PaloMiku/MxShell/refs/heads/main/shiro/docker compose.yml"
+            COMPOSE_FILE_URL="$GITHUB_MIRROR/PaloMiku/MxShell/refs/heads/main/shiro/docker-compose.yml"
             echo "正在下载 Shiro 所需要的 Docker Compose 文件: 从 $COMPOSE_FILE_URL 下载到 $FRONTEND_DIR/docker-compose.yml"
             wget -O "$FRONTEND_DIR/docker-compose.yml" "$COMPOSE_FILE_URL"
             if [ $? -ne 0 ]; then
