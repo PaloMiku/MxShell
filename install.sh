@@ -279,8 +279,8 @@ if [[ "$IS_CN_NETWORK" == true ]]; then
 else
     GITHUB_MIRROR="https://raw.githubusercontent.com"
 fi
-COMPOSE_FILE_URL="$GITHUB_MIRROR/PaloMiku/MxShell/refs/heads/main/core/docker compose.yml"
-echo "正在下载 Core 所需要的 Docker Compose 文件: 从 $COMPOSE_FILE_URL 下载到 $CORE_DIR/docker compose.yml"
+COMPOSE_FILE_URL="$GITHUB_MIRROR/PaloMiku/MxShell/refs/heads/main/core/docker-compose.yml"
+echo "正在下载 Core 所需要的 Docker Compose 文件: 从 $COMPOSE_FILE_URL 下载到 $CORE_DIR/docker-compose.yml"
 wget -O "$CORE_DIR/docker-compose.yml" "$COMPOSE_FILE_URL"
 
 # 检查下载是否成功
@@ -521,9 +521,9 @@ EOL
             else
                 GITHUB_MIRROR="https://raw.githubusercontent.com"
             fi
-            COMPOSE_FILE_URL="$GITHUB_MIRROR/Innei/Shiro/refs/heads/main/docker compose.yml"
-            echo "正在下载 Shiro 所需要的 Docker Compose 文件: 从 $COMPOSE_FILE_URL 下载到 $FRONTEND_DIR/docker compose.yml"
-            wget -O "$FRONTEND_DIR/docker compose.yml" "$COMPOSE_FILE_URL"
+            COMPOSE_FILE_URL="$GITHUB_MIRROR/Innei/Shiro/refs/heads/main/docker-compose.yml"
+            echo "正在下载 Shiro 所需要的 Docker Compose 文件: 从 $COMPOSE_FILE_URL 下载到 $FRONTEND_DIR/docker-compose.yml"
+            wget -O "$FRONTEND_DIR/docker-compose.yml" "$COMPOSE_FILE_URL"
             if [ $? -ne 0 ]; then
                 echo "下载 Shiro 需求的 Docker Compose 文件失败！请检查环境网络连接。"
                 exit 1
