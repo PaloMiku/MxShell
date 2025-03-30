@@ -120,8 +120,8 @@ function Load_Env_File() {
         echo "当前为无人值守（自动化）模式，加载环境变量文件: $ENV_FILE"
         export $(grep -v '^#' "$ENV_FILE" | xargs)
     else
-        echo "检测到环境变量文件 $ENV_FILE 不存在，无法加载。"
-        exit 1
+        echo "检测到环境变量文件 $ENV_FILE 不存在，切换到交互模式。"
+        export AUTO_INSTALL=false
     fi
 }
 
