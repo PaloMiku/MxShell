@@ -20,7 +20,7 @@ curl -sSL https://github.moeyy.xyz/https://raw.githubusercontent.com/PaloMiku/Mx
 
 当前脚本功能包括：
 
-- 自动切换 Docker 安装源及镜像源
+- 自动切换 Docker 安装源及镜像源（使用 linuxmirrors.cn 的脚本实现）
 - 提供交互式安装 MixSpace 后端（基于 Docker）
 - 支持无人值守（预配置）安装 MixSpace 后端
 

@@ -107,7 +107,7 @@ function Display_Version() {
     if command -v docker &> /dev/null; then
         echo -e "  $(docker --version)"
     else
-        echo -e "  Docker 未安装"
+        echo -e "  Docker 未安装，等待配置。"
     fi
 
     echo -e "${GREEN}==============================${NC}"
@@ -116,7 +116,7 @@ function Display_Version() {
 function Load_Env_File() {
     ENV_FILE="$(dirname "$0")/mxshell.env"
     if [[ -f "$ENV_FILE" ]]; then
-        echo "当前为无人值守（自动化）模式，加载环境变量文件: $ENV_FILE"
+        echo "检测到环境变量文件 $ENV_FILE ，加载环境变量文件并切换为无人值守（自动化）模式: $ENV_FILE"
         export $(grep -v '^#' "$ENV_FILE" | xargs)
     else
         echo "检测到环境变量文件 $ENV_FILE 不存在，切换到交互模式。"
