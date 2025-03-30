@@ -21,6 +21,7 @@ function Check_Root() {
 
 function Check_China_Network() {
     echo "正在检测网络环境..."
+    USER_IP=$(curl -s --max-time 2 https://ipinfo.io/ip)
     if [[ -n "$USER_IP" ]]; then
         USER_REGION=$(curl -s --max-time 2 https://ipapi.co/$USER_IP/country_name)
         echo "检测到用户地区: $USER_REGION"
@@ -293,6 +294,9 @@ function main() {
     # 检测网络环境
     Check_China_Network
 
+    # 显示版本信息
+    Display_Version
+
     # 配置 Docker
     Configure_Docker
 
@@ -307,9 +311,6 @@ function main() {
 
     # 下载并配置核心组件
     Download_And_Configure_Core
-
-    # 显示版本信息
-    Display_Version
 }
 
 # 调用主函数
