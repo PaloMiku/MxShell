@@ -258,7 +258,6 @@ function Download_And_Configure_Core() {
             if $valid; then
                 break
             fi
-        done
     else
         echo "使用从配置文件加载的ALLOWED_ORIGINS: $ALLOWED_ORIGINS"
     fi
