@@ -235,17 +235,16 @@ function Download_And_Configure_Core() {
     fi
 
     if [ -z "$ALLOWED_ORIGINS" ]; then
-        echo "从配置中未检测到ALLOWED_ORIGINS，需要手动输入..."
         while true; do
-            read -p "ALLOWED_ORIGINS：需要填写被允许访问的域名，通常是前端的域名，如果允许多个域名访问，用英文逗号分隔域名: " ALLOWED_ORIGINS
+            read -p "ALLOWED_ORIGINS：需要填写被允许访问的域名（不包含 http:// 或 https://），通常是前端的域名，如果允许多个域名访问，用英文逗号分隔域名: " ALLOWED_ORIGINS
             ALLOWED_ORIGINS=$(echo "$ALLOWED_ORIGINS" | sed 's/^ *//;s/ *$//')
             IFS=',' read -ra DOMAINS <<< "$ALLOWED_ORIGINS"
             valid=true
-            read -p "ALLOWED_ORIGINS：需要填写被允许访问的域名（不包含 http:// 或 https://），通常是前端的域名，如果允许多个域名访问，用英文逗号分隔域名: " ALLOWED_ORIGINS
+            for domain in "${DOMAINS[@]}"; do
                 domain=$(echo "$domain" | sed 's/^ *//;s/ *$//')
                 if [[ "$domain" =~ ^https?:// ]]; then
                     valid=false
-                    echo "输入无效，请不要包含http协议头，请重新输入。"
+                    echo "输入无效，请不要包含 http 协议头，请重新输入。"
                     break
                 fi
                 if [[ -z "$domain" || ! "$domain" =~ ^([a-zA-Z0-9\u00A1-\uFFFF]([a-zA-Z0-9\u00A1-\uFFFF-]{0,61}[a-zA-Z0-9\u00A1-\uFFFF])?\.)+[a-zA-Z\u00A1-\uFFFF]{2,}$ ]]; then
@@ -257,8 +256,9 @@ function Download_And_Configure_Core() {
             if $valid; then
                 break
             fi
+        done
     else
-        echo "使用从配置文件加载的ALLOWED_ORIGINS: $ALLOWED_ORIGINS"
+        echo "使用从配置文件加载的 ALLOWED_ORIGINS: $ALLOWED_ORIGINS"
     fi
 
 echo "JWT_SECRET=$JWT_SECRET" > "$ENV_FILE"
