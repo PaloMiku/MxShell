@@ -175,14 +175,25 @@ function Select_Target_Directory() {
 function Download_And_Configure_Core() {
     CORE_DIR="$TARGET_DIR/core"
     mkdir -p "$CORE_DIR"
-    if [[ "$IS_CN_NETWORK" == true ]]; then
+    if [[ "$IS_CN_NETWORK" == "true" ]]; then
         GITHUB_MIRROR="https://github.moeyy.xyz/https://raw.githubusercontent.com"
     else
         GITHUB_MIRROR="https://raw.githubusercontent.com"
     fi
     COMPOSE_FILE_URL="$GITHUB_MIRROR/PaloMiku/MxShell/refs/heads/main/core/docker-compose.yml"
     echo "正在下载 Core 所需要的 Docker Compose 文件: 从 $COMPOSE_FILE_URL 下载到 $CORE_DIR/docker-compose.yml"
-    wget -O "$CORE_DIR/docker-compose.yml" "$COMPOSE_FILE_URL"
+    MAX_RETRIES=3
+    RETRY_DELAY=5
+    for ((i=1; i<=MAX_RETRIES; i++)); do
+        wget -O "$CORE_DIR/docker-compose.yml" "$COMPOSE_FILE_URL" && break
+        echo "下载失败，重试 ($i/$MAX_RETRIES) 次后继续..."
+        sleep $RETRY_DELAY
+    done
+
+    if [ ! -f "$CORE_DIR/docker-compose.yml" ]; then
+        echo "下载Core 需求的 Docker Compose 文件失败！请检查环境网络连接。"
+        exit 1
+    fi
 
     if [ $? -ne 0 ]; then
         echo "下载Core 需求的 Docker Compose 文件失败！请检查环境网络连接。"
@@ -191,28 +202,24 @@ function Download_And_Configure_Core() {
 
     ENV_FILE="$CORE_DIR/.env"
     if [ -f "$ENV_FILE" ]; then
-        echo "已检测到容器环境变量文件: $ENV_FILE"
+                JWT_SECRET=$(openssl rand -base64 16 | tr -d '\n' | cut -c1-32)
     else
         echo "未检测到容器环境变量文件，正在创建: $ENV_FILE"
         touch "$ENV_FILE"
     fi
 
     if [ -z "$JWT_SECRET" ]; then
-        echo "从配置中未检测到JWT_SECRET，需要手动输入..."
+        echo "未检测到 JWT_SECRET，请输入一个 16 至 32 字符的密钥（留空将随机生成）:"
         while true; do
-            read -p "JWT_SECRET：需要填写长度不小于 16 个字符，不大于 32 个字符的字符串，用于加密用户的 JWT，务必保存好自己的密钥，不要泄露给他人。按回车键随机生成一个16位的字符串: " JWT_SECRET
+            read -p "JWT_SECRET: " JWT_SECRET
             if [[ -z "$JWT_SECRET" ]]; then
                 JWT_SECRET=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 16 | head -n 1)
-                echo "已为您随机生成 JWT_SECRET: $JWT_SECRET"
+                echo "已随机生成 JWT_SECRET: $JWT_SECRET"
             fi
-            if [[ -n "$JWT_SECRET" && ${#JWT_SECRET} -ge 16 && ${#JWT_SECRET} -le 32 ]]; then
-                if [[ "$JWT_SECRET" =~ ^[a-zA-Z0-9].*[a-zA-Z0-9]$ ]]; then
-                    break
-                else
-                    echo "输入无效，头尾不能包含特殊符号，请重新输入。"
-                fi
+            if [[ ${#JWT_SECRET} -ge 16 && ${#JWT_SECRET} -le 32 ]]; then
+                break
             else
-                echo "输入无效，请输入长度为 16 到 32 个字符的字符串。"
+                echo "无效输入，请输入 16 至 32 字符的密钥。"
             fi
         done
     else
@@ -226,14 +233,14 @@ function Download_And_Configure_Core() {
             ALLOWED_ORIGINS=$(echo "$ALLOWED_ORIGINS" | sed 's/^ *//;s/ *$//')
             IFS=',' read -ra DOMAINS <<< "$ALLOWED_ORIGINS"
             valid=true
-            for domain in "${DOMAINS[@]}"; do
+            read -p "ALLOWED_ORIGINS：需要填写被允许访问的域名（不包含 http:// 或 https://），通常是前端的域名，如果允许多个域名访问，用英文逗号分隔域名: " ALLOWED_ORIGINS
                 domain=$(echo "$domain" | sed 's/^ *//;s/ *$//')
                 if [[ "$domain" =~ ^https?:// ]]; then
                     valid=false
                     echo "输入无效，请不要包含http协议头，请重新输入。"
                     break
                 fi
-                if [[ -z "$domain" || ! "$domain" =~ ^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$ ]]; then
+                if [[ -z "$domain" || ! "$domain" =~ ^([a-zA-Z0-9\u00A1-\uFFFF]([a-zA-Z0-9\u00A1-\uFFFF-]{0,61}[a-zA-Z0-9\u00A1-\uFFFF])?\.)+[a-zA-Z\u00A1-\uFFFF]{2,}$ ]]; then
                     valid=false
                     echo "输入无效，请输入至少一个有效的域名，多个域名请用英文逗号分隔。"
                     break
@@ -247,27 +254,23 @@ function Download_And_Configure_Core() {
         echo "使用从配置文件加载的ALLOWED_ORIGINS: $ALLOWED_ORIGINS"
     fi
 
-    cat > "$ENV_FILE" <<EOL
-JWT_SECRET=$JWT_SECRET
-ALLOWED_ORIGINS=$ALLOWED_ORIGINS
-EOL
+echo "JWT_SECRET=$JWT_SECRET" > "$ENV_FILE"
+echo "ALLOWED_ORIGINS=$ALLOWED_ORIGINS" >> "$ENV_FILE"
 
 echo "环境变量设置完成！"
 
 # 检查容器是否已运行
-if docker compose -f "$CORE_DIR/docker-compose.yml" ps | grep -q 'Up'; then
+if docker inspect -f '{{.State.Running}}' $(docker compose -f "$CORE_DIR/docker-compose.yml" ps -q) 2>/dev/null | grep -q 'true'; then
     echo "Core 核心容器已在运行，跳过启动步骤。"
 else
     # 启动容器
     echo "正在启动容器..."
-    cd "$CORE_DIR"
-    docker compose up -d
-
-    # 检查容器状态
-    if [ $? -eq 0 ]; then
+    cd "$CORE_DIR" || { echo "无法切换到目录 $CORE_DIR，请检查目录是否存在。"; exit 1; }
+    if docker compose up -d; then
         echo "Core 核心容器已成功启动！"
     else
         echo "Core 核心容器启动失败，请检查日志。"
+        echo "尝试使用以下命令查看日志: docker compose logs"
         exit 1
     fi
 fi
