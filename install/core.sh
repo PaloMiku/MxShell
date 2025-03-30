@@ -20,16 +20,12 @@ function Check_Root() {
 }
 
 function Check_China_Network() {
-    echo "正在检测网络环境..."
     USER_IP=$(curl -s --max-time 2 https://ipinfo.io/ip)
     if [[ -n "$USER_IP" ]]; then
         USER_REGION=$(curl -s --max-time 2 https://ipapi.co/$USER_IP/country_name)
-        echo "检测到用户地区: $USER_REGION"
         if echo "$USER_REGION" | grep -q "China"; then
-            echo "检测到中国大陆网络环境。"
             export IS_CN_NETWORK=true
         else
-            echo "检测到非中国大陆网络环境。"
             export IS_CN_NETWORK=false
         fi
     else
@@ -39,9 +35,7 @@ function Check_China_Network() {
 }
 
 function Configure_Docker() {
-    echo "网络环境检查完成。"
     if command -v docker &> /dev/null; then
-        echo "Docker 已安装，跳过 Docker 配置步骤。"
         return
     fi
 
@@ -93,6 +87,14 @@ function Display_Version() {
         echo -e "  无法检测系统版本"
     fi
 
+    # 输出用户地区
+    echo -e "${GREEN}用户地区:${NC}"
+    if [[ -n "$USER_REGION" ]]; then
+        echo -e "  $USER_REGION"
+    else
+        echo -e "  未检测到用户地区"
+    fi
+
     # 输出当前系统架构
     echo -e "${GREEN}当前系统架构:${NC}"
     Detect_Architecture
@@ -107,8 +109,7 @@ function Display_Version() {
     if command -v docker &> /dev/null; then
         echo -e "  $(docker --version)"
     else
-        echo -e "  Docker 未安装，脚本终止。"
-        exit 1
+        echo -e "  Docker 未安装。"
     fi
 
     echo -e "${GREEN}==============================${NC}"
@@ -302,11 +303,11 @@ function main() {
     # 检测网络环境
     Check_China_Network
 
-    # 配置 Docker
-    Configure_Docker
-
     # 显示版本信息
     Display_Version
+
+    # 配置 Docker
+    Configure_Docker
 
     # 检查是否为自动安装模式
     Auto_Install_Check "$@"
