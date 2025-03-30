@@ -78,32 +78,40 @@ echo "\`--'   \`--' \`--'    \`--'   '--' \`-----'  \`--'       \`--' \`--'    \
 function Display_Version() {
     GREEN='\033[0;32m'
     NC='\033[0m'
-    echo -e "${GREEN}MixSpace 后端一键安装脚本 版本：v2.0.0${NC}"
-    
+
+    echo -e "${GREEN}=============================="
+    echo -e "MixSpace 后端一键安装脚本"
+    echo -e "版本：v2.0.0"
+    echo -e "==============================${NC}"
+
     # 输出当前系统版本
-    echo -e "当前系统版本:${NC}"
+    echo -e "${GREEN}当前系统版本:${NC}"
     if [[ -f /etc/os-release ]]; then
         . /etc/os-release
-        echo -e "${GREEN}$PRETTY_NAME${NC}"
+        echo -e "  $PRETTY_NAME"
     else
-        echo -e "${GREEN}无法检测系统版本${NC}"
+        echo -e "  无法检测系统版本"
     fi
 
     # 输出当前系统架构
+    echo -e "${GREEN}当前系统架构:${NC}"
     Detect_Architecture
     if [[ -z "$architecture" ]]; then
-        echo "错误: 未能检测到系统架构，请检查系统环境。"
+        echo -e "  错误: 未能检测到系统架构，请检查系统环境。"
         exit 1
     fi
-    echo -e "${GREEN}当前系统架构: $architecture${NC}"
+    echo -e "  $architecture"
 
     # 输出已安装的 Docker 版本
     echo -e "${GREEN}已安装的 Docker 版本:${NC}"
     if command -v docker &> /dev/null; then
-        docker --version
+        echo -e "  $(docker --version)"
     else
-        echo -e "${GREEN}Docker 未安装${NC}"
+        echo -e "  Docker 未安装，脚本终止。"
+        exit 1
     fi
+
+    echo -e "${GREEN}==============================${NC}"
 }
 
 function Auto_Install_Check() {
