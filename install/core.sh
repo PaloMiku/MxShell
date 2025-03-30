@@ -131,7 +131,7 @@ function Select_Target_Directory() {
     if [[ "$AUTO_INSTALL" == "true" ]]; then
         # 自动化模式下从环境变量加载 TARGET_DIR
         if [ -z "$TARGET_DIR" ] || [[ "$TARGET_DIR" != /* ]] || ! mkdir -p "$TARGET_DIR" 2>/dev/null; then
-            echo "当前为无人值守（自动化）模式，但未设置 TARGET_DIR 环境变量。"
+            echo "当前为无人值守（自动化）模式，但未设置 TARGET_DIR 环境变量或目录无效。"
             exit 1
         else
             echo "（自动化）使用从环境变量加载的 TARGET_DIR: $TARGET_DIR"
@@ -143,23 +143,18 @@ function Select_Target_Directory() {
         TARGET_DIR=${TARGET_DIR:-/opt/mxspace}
     fi
 
-    # 检查目标目录是否存在
-    TARGET_DIR_EXISTS=false
-    if [ -d "$TARGET_DIR" ]; then
-        TARGET_DIR_EXISTS=true
-        echo "目标目录已存在: $TARGET_DIR"
+    # 检查目标目录是否为关键系统目录
+    if [[ "$TARGET_DIR" == "/" || "$TARGET_DIR" == "/root" || "$TARGET_DIR" == "/home" ]]; then
+        echo "错误: 目标目录为关键系统目录 ($TARGET_DIR)，无法使用。"
+        exit 1
     fi
-            # 警告: 在自动化模式下，脚本会自动删除并重新创建目标目录。
-            # 请确保 TARGET_DIR 未设置为关键系统目录，例如 "/", "/root" 或 "/home"。
-            if [[ "$TARGET_DIR" == "/" || "$TARGET_DIR" == "/root" || "$TARGET_DIR" == "/home" ]]; then
-    if [[ "$TARGET_DIR_EXISTS" == true ]]; then
+
+    # 检查目标目录是否存在
+    if [ -d "$TARGET_DIR" ]; then
+        echo "目标目录已存在: $TARGET_DIR"
         if [[ "$AUTO_INSTALL" == "true" ]]; then
             echo "当前为无人值守（自动化）模式，直接删除并重新创建目录..."
-            if [[ "$TARGET_DIR" == "/" || "$TARGET_DIR" == "/root" || "$TARGET_DIR" == "/home" ]]; then
-                echo "错误: 目标目录为关键系统目录 ($TARGET_DIR)，无法删除。"
-                exit 1
-            fi
-            echo "是否删除并重新创建？(y/N，按 Enter 默认保留):"
+            rm -rf "$TARGET_DIR"
             mkdir -p "$TARGET_DIR"
         else
             echo "是否删除并重新创建？(y/n，默认: n):"
@@ -172,15 +167,17 @@ function Select_Target_Directory() {
                 mkdir -p "$TARGET_DIR"
             else
                 echo "保留现有目录，继续使用: $TARGET_DIR"
-                if ! mkdir -p "$TARGET_DIR"; then
-                    echo "错误: 无法创建目录 $TARGET_DIR，请检查权限。"
-                    exit 1
-                fi
             fi
         fi
     else
         echo "目标目录不存在，正在创建: $TARGET_DIR"
         mkdir -p "$TARGET_DIR"
+    fi
+
+    # 检查目录创建是否成功
+    if [ ! -d "$TARGET_DIR" ]; then
+        echo "错误: 无法创建目录 $TARGET_DIR，请检查权限。"
+        exit 1
     fi
 }
 
