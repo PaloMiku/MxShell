@@ -80,27 +80,31 @@ echo "\`--'   \`--' \`--'    \`--'   '--' \`-----'  \`--'       \`--' \`--'    \
 function Display_Version() {
     GREEN='\033[0;32m'
     NC='\033[0m'
-    echo -e "${GREEN} MixSpace 后端一键安装脚本 版本：v2.0.0${NC}"
+    echo -e "${GREEN}MixSpace 后端一键安装脚本 版本：v2.0.0${NC}"
     
     # 输出当前系统版本
-    echo -e "${NC}当前系统版本:${NC}"
+    echo -e "当前系统版本:${NC}"
     if [[ -f /etc/os-release ]]; then
         . /etc/os-release
-        echo -e "${NC}$PRETTY_NAME${NC}"
+        echo -e "${GREEN}$PRETTY_NAME${NC}"
     else
-        echo -e "${NC}无法检测系统版本${NC}"
+        echo -e "${GREEN}无法检测系统版本${NC}"
     fi
 
     # 输出当前系统架构
     Detect_Architecture
-    echo -e "${NC}当前系统架构: $architecture${NC}"
+    if [[ -z "$architecture" ]]; then
+        echo "错误: 未能检测到系统架构，请检查系统环境。"
+        exit 1
+    fi
+    echo -e "${GREEN}当前系统架构: $architecture${NC}"
 
     # 输出已安装的 Docker 版本
-    echo -e "${NC}已安装的 Docker 版本:${NC}"
+    echo -e "${GREEN}已安装的 Docker 版本:${NC}"
     if command -v docker &> /dev/null; then
         docker --version
     else
-        echo -e "${NC}Docker 未安装${NC}"
+        echo -e "${GREEN}Docker 未安装${NC}"
     fi
 }
 
@@ -114,7 +118,7 @@ function Auto_Install_Check() {
 }
 
 function Load_Env_File() {
-    if [[ "$AUTO_INSTALL" == "true" ]]; then
+            source "$ENV_FILE"
         ENV_FILE="$(dirname "$0")/mxshell.env"
         if [[ -f "$ENV_FILE" ]]; then
             echo "当前为无人值守（自动化）模式，加载环境变量文件: $ENV_FILE"
@@ -131,7 +135,7 @@ function Load_Env_File() {
 function Select_Target_Directory() {
     if [[ "$AUTO_INSTALL" == "true" ]]; then
         # 自动化模式下从环境变量加载 TARGET_DIR
-        if [ -z "$TARGET_DIR" ]; then
+        if [ -z "$TARGET_DIR" ] || [[ "$TARGET_DIR" != /* ]] || ! mkdir -p "$TARGET_DIR" 2>/dev/null; then
             echo "当前为无人值守（自动化）模式，但未设置 TARGET_DIR 环境变量。"
             exit 1
         else
@@ -139,21 +143,30 @@ function Select_Target_Directory() {
         fi
     else
         # 交互式模式下提示用户输入目录
-        echo "请输入存储 MixSpace 容器文件的目录（默认: /opt/mxspace）："
+        echo "请输入存储 MixSpace 容器文件的目录（按 Enter 使用默认值: /opt/mxspace）："
         read -r TARGET_DIR
         TARGET_DIR=${TARGET_DIR:-/opt/mxspace}
     fi
 
     # 检查目标目录是否存在
+    TARGET_DIR_EXISTS=false
     if [ -d "$TARGET_DIR" ]; then
+        TARGET_DIR_EXISTS=true
         echo "目标目录已存在: $TARGET_DIR"
+    fi
+            # 警告: 在自动化模式下，脚本会自动删除并重新创建目标目录。
+            # 请确保 TARGET_DIR 未设置为关键系统目录，例如 "/", "/root" 或 "/home"。
+            if [[ "$TARGET_DIR" == "/" || "$TARGET_DIR" == "/root" || "$TARGET_DIR" == "/home" ]]; then
+    if [[ "$TARGET_DIR_EXISTS" == true ]]; then
         if [[ "$AUTO_INSTALL" == "true" ]]; then
-            # 自动化模式下直接删除并重新创建目录
             echo "当前为无人值守（自动化）模式，直接删除并重新创建目录..."
-            rm -rf "$TARGET_DIR"
+            if [[ "$TARGET_DIR" == "/" || "$TARGET_DIR" == "/root" || "$TARGET_DIR" == "/home" ]]; then
+                echo "错误: 目标目录为关键系统目录 ($TARGET_DIR)，无法删除。"
+                exit 1
+            fi
+            echo "是否删除并重新创建？(y/N，按 Enter 默认保留):"
             mkdir -p "$TARGET_DIR"
         else
-            # 交互式模式下询问用户是否删除
             echo "是否删除并重新创建？(y/n，默认: n):"
             read -r DELETE_TARGET_DIR
             DELETE_TARGET_DIR=${DELETE_TARGET_DIR:-n}
@@ -164,6 +177,10 @@ function Select_Target_Directory() {
                 mkdir -p "$TARGET_DIR"
             else
                 echo "保留现有目录，继续使用: $TARGET_DIR"
+                if ! mkdir -p "$TARGET_DIR"; then
+                    echo "错误: 无法创建目录 $TARGET_DIR，请检查权限。"
+                    exit 1
+                fi
             fi
         fi
     else
