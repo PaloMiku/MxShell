@@ -88,7 +88,7 @@ function Display_Version() {
     fi
 
     # 输出用户地区
-    echo -e "${GREEN}用户地区:${NC}"
+    echo -e "${GREEN}当前用户地区:${NC}"
     if [[ -n "$USER_REGION" ]]; then
         echo -e "  $USER_REGION"
     else
@@ -105,11 +105,11 @@ function Display_Version() {
     echo -e "  $architecture"
 
     # 输出已安装的 Docker 版本
-    echo -e "${GREEN}已安装的 Docker 版本:${NC}"
+    echo -e "${GREEN}系统 Docker 版本:${NC}"
     if command -v docker &> /dev/null; then
         echo -e "  $(docker --version)"
     else
-        echo -e "  Docker 未安装。"
+        echo -e "  Docker 未安装"
     fi
 
     echo -e "${GREEN}==============================${NC}"
