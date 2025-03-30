@@ -48,7 +48,7 @@ function Configure_Docker() {
           --install-latest true \
           --close-firewall true
     else
-        echo "当前为非中国大陆网络环境，使用非官方源配置 Docker..."
+        echo "当前为非中国大陆网络环境，使用官方源配置 Docker..."
         bash <(curl -sSL https://linuxmirrors.cn/docker.sh) \
           --source download.docker.com \
           --source-registry registry.hub.docker.com \
@@ -73,7 +73,7 @@ function Display_Version() {
 
     echo -e "${GREEN}=============================="
     echo -e "MixSpace 后端一键安装脚本"
-    echo -e "版本：v2.0.0"
+    echo -e "当前脚本版本：v2-20250330"
     echo -e "==============================${NC}"
 
     # 输出当前系统版本
@@ -82,8 +82,12 @@ function Display_Version() {
         . /etc/os-release
         echo -e "  $PRETTY_NAME"
     else
-        echo -e "  无法检测系统版本"
+        echo -e "  未检测到系统版本"
     fi
+
+    # 输出当前时间
+    echo -e "${GREEN}当前设备时间:${NC}"
+    echo -e "  $(date '+%Y-%m-%d %H:%M:%S')"
 
     # 输出用户地区
     echo -e "${GREEN}当前用户地区:${NC}"
@@ -97,7 +101,7 @@ function Display_Version() {
     echo -e "${GREEN}当前系统架构:${NC}"
     Detect_Architecture
     if [[ -z "$architecture" ]]; then
-        echo -e "  错误: 未能检测到系统架构，请检查系统环境。"
+        echo -e "  错误: 未能检测到系统架构，请检查系统环境"
         exit 1
     fi
     echo -e "  $architecture"
@@ -107,7 +111,7 @@ function Display_Version() {
     if command -v docker &> /dev/null; then
         echo -e "  $(docker --version)"
     else
-        echo -e "  Docker 未安装，等待配置。"
+        echo -e "  Docker 未安装，等待配置"
     fi
 
     echo -e "${GREEN}==============================${NC}"
@@ -273,6 +277,7 @@ else
     cd "$CORE_DIR" || { echo "无法切换到目录 $CORE_DIR，请检查目录是否存在。"; exit 1; }
     if docker compose up -d; then
         echo "Core 核心容器已成功启动！"
+        echo "当前设备时间: $(date '+%Y-%m-%d %H:%M:%S')"
     else
         echo "Core 核心容器启动失败，请检查日志。"
         echo "尝试使用以下命令查看日志: docker compose logs"
