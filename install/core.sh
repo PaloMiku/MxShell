@@ -23,6 +23,7 @@ function Check_China_Network() {
     USER_IP=$(curl -s --max-time 2 https://ipinfo.io/ip)
     if [[ -n "$USER_IP" ]]; then
         USER_REGION=$(curl -s --max-time 2 https://ipapi.co/$USER_IP/country_name)
+        USER_ORG=$(curl -s --max-time 2 https://ipapi.co/$USER_IP/org)
         if echo "$USER_REGION" | grep -q "China"; then
             export IS_CN_NETWORK=true
         else
@@ -99,6 +100,14 @@ function Display_Version() {
         echo -e "  未检测到用户地区"
     fi
 
+    # 输出用户数据中心
+    echo -e "${GREEN}当前用户数据中心:${NC}"
+    if [[ -n "$USER_ORG" ]]; then
+        echo -e "  $USER_ORG"
+    else
+        echo -e "  未检测到用户数据中心"
+    fi
+    
     # 输出当前系统架构
     echo -e "${GREEN}当前系统架构:${NC}"
     Detect_Architecture
