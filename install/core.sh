@@ -117,17 +117,13 @@ function Auto_Install_Check() {
 }
 
 function Load_Env_File() {
-            source "$ENV_FILE"
-        ENV_FILE="$(dirname "$0")/mxshell.env"
-        if [[ -f "$ENV_FILE" ]]; then
-            echo "当前为无人值守（自动化）模式，加载环境变量文件: $ENV_FILE"
-            export $(grep -v '^#' "$ENV_FILE" | xargs)
-        else
-            echo "检测到环境变量文件 $ENV_FILE 不存在，无法加载。"
-            exit 1
-        fi
+    ENV_FILE="$(dirname "$0")/mxshell.env"
+    if [[ -f "$ENV_FILE" ]]; then
+        echo "当前为无人值守（自动化）模式，加载环境变量文件: $ENV_FILE"
+        export $(grep -v '^#' "$ENV_FILE" | xargs)
     else
-        echo "当前为交互式安装模式，忽略加载环境变量文件。"
+        echo "检测到环境变量文件 $ENV_FILE 不存在，无法加载。"
+        exit 1
     fi
 }
 
