@@ -45,7 +45,6 @@ function Configure_Docker() {
           --source mirrors.aliyun.com/docker-ce \
           --source-registry dockerproxy.net \
           --protocol http \
-          --use-intranet-source false \
           --install-latest true \
           --close-firewall true
     else
@@ -54,7 +53,6 @@ function Configure_Docker() {
           --source download.docker.com \
           --source-registry registry.hub.docker.com \
           --protocol http \
-          --use-intranet-source false \
           --install-latest true \
           --close-firewall true
     fi
