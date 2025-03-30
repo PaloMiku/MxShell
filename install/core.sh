@@ -302,11 +302,11 @@ function main() {
     # 检测网络环境
     Check_China_Network
 
-    # 显示版本信息
-    Display_Version
-
     # 配置 Docker
     Configure_Docker
+
+    # 显示版本信息
+    Display_Version
 
     # 检查是否为自动安装模式
     Auto_Install_Check "$@"
