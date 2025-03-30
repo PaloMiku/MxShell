@@ -74,8 +74,6 @@ echo "|  |   |  |(|  |_/    .'    \  .-._)   \ |  .___.' (|  .-.  |  ||  |OO )  
 echo "|  |   |  | |  |'->  /  .'.  \ \       / |  |       |  | |  | (_'  '--'\  |  \`---."
 echo "\`--'   \`--' \`--'    \`--'   '--' \`-----'  \`--'       \`--' \`--'    \`-----'  \`------'"
 
-
-
 function Display_Version() {
     GREEN='\033[0;32m'
     NC='\033[0m'
@@ -210,7 +208,7 @@ function Download_And_Configure_Core() {
     fi
 
     ENV_FILE="$CORE_DIR/.env"
-    if [ -f "$ENV_FILE" ]; then
+    if [ -f "$ENV_FILE" ];then
                 JWT_SECRET=$(openssl rand -base64 16 | tr -d '\n' | cut -c1-32)
     else
         echo "未检测到容器环境变量文件，正在创建: $ENV_FILE"
@@ -284,3 +282,35 @@ else
 fi
 
 }
+
+function main() {
+    # 检查是否为 Root 用户
+    Check_Root
+
+    # 检测系统架构
+    Detect_Architecture
+
+    # 检测网络环境
+    Check_China_Network
+
+    # 配置 Docker
+    Configure_Docker
+
+    # 检查是否为自动安装模式
+    Auto_Install_Check "$@"
+
+    # 加载环境变量文件
+    Load_Env_File
+
+    # 选择目标目录
+    Select_Target_Directory
+
+    # 下载并配置核心组件
+    Download_And_Configure_Core
+
+    # 显示版本信息
+    Display_Version
+}
+
+# 调用主函数
+main "$@"
