@@ -115,15 +115,6 @@ function Display_Version() {
     echo -e "${GREEN}==============================${NC}"
 }
 
-function Auto_Install_Check() {
-    # 检查是否传入 --auto_install 参数
-    if [[ " $* " == *" --auto_install "* ]]; then
-        export AUTO_INSTALL=true
-    else
-        export AUTO_INSTALL=false
-    fi
-}
-
 function Load_Env_File() {
     ENV_FILE="$(dirname "$0")/mxshell.env"
     if [[ -f "$ENV_FILE" ]]; then
@@ -308,9 +299,6 @@ function main() {
 
     # 配置 Docker
     Configure_Docker
-
-    # 检查是否为自动安装模式
-    Auto_Install_Check "$@"
 
     # 加载环境变量文件
     Load_Env_File
