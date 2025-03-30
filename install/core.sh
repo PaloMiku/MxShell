@@ -21,18 +21,6 @@ function Check_Root() {
 
 function Check_China_Network() {
     echo "正在检测网络环境..."
-    USER_IP=$(curl -s --max-time 2 https://ipinfo.io/ip || echo "")
-    if [[ -z "$USER_IP" ]]; then
-        if [[ -n "$USER_IP" ]]; then
-            USER_REGION=$(curl -s --max-time 2 https://ipapi.co/$USER_IP/country_name)
-        else
-            echo "无法检测用户IP，默认设置为非中国大陆网络环境。"
-            export IS_CN_NETWORK=false
-            return
-        fi
-        export IS_CN_NETWORK=false
-        return
-    fi
     if [[ -n "$USER_IP" ]]; then
         USER_REGION=$(curl -s --max-time 2 https://ipapi.co/$USER_IP/country_name)
         echo "检测到用户地区: $USER_REGION"
