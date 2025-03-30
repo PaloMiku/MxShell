@@ -40,6 +40,11 @@ function Check_China_Network() {
 
 function Configure_Docker() {
     echo "网络环境检查完成。"
+    if command -v docker &> /dev/null; then
+        echo "Docker 已安装，跳过 Docker 配置步骤。"
+        return
+    fi
+
     if [[ "$IS_CN_NETWORK" == "true" ]]; then
         echo "当前为中国大陆网络环境，使用国内源配置 Docker..."
         bash <(curl -sSL https://linuxmirrors.cn/docker.sh) \
@@ -59,7 +64,6 @@ function Configure_Docker() {
           --install-latest true \
           --close-firewall true
     fi
-    
 }
 
 echo "<-. (\`-')    _       (\`-')      (\`-').->  _  (\`-')  (\`-')  _              (\`-')  _"
