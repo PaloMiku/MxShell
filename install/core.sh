@@ -23,7 +23,6 @@ function Check_China_Network() {
     # 定义多个 IP API 备用
     IP_APIS=(
         "https://ipinfo.io/ip"
-        "https://api.ipify.org"
         "https://checkip.amazonaws.com"
     )
 
