@@ -20,7 +20,21 @@ function Check_Root() {
 }
 
 function Check_China_Network() {
-    USER_IP=$(curl -s --max-time 2 https://ipinfo.io/ip)
+    # 定义多个 IP API 备用
+    IP_APIS=(
+        "https://ipinfo.io/ip"
+        "https://api.ipify.org"
+        "https://checkip.amazonaws.com"
+    )
+
+    USER_IP=""
+    for API in "${IP_APIS[@]}"; do
+        USER_IP=$(curl -s --max-time 2 "$API")
+        if [[ -n "$USER_IP" ]]; then
+            break
+        fi
+    done
+
     if [[ -n "$USER_IP" ]]; then
         USER_REGION=$(curl -s --max-time 2 https://ipapi.co/$USER_IP/country_name)
         USER_ORG=$(curl -s --max-time 2 https://ipapi.co/$USER_IP/org)
@@ -30,8 +44,15 @@ function Check_China_Network() {
             export IS_CN_NETWORK=false
         fi
     else
-        echo "无法检测用户IP，默认设置为非中国大陆网络环境。"
-        export IS_CN_NETWORK=false
+        # 如果无法检测到用户 IP，则询问用户是否为中国大陆网络环境
+        echo "无法检测用户IP，设备环境是否为中国大陆网络环境？(y/n，默认: n):"
+        read -r IS_CN_INPUT
+        IS_CN_INPUT=${IS_CN_INPUT:-n}
+        if [[ "$IS_CN_INPUT" == "y" || "$IS_CN_INPUT" == "Y" ]]; then
+            export IS_CN_NETWORK=true
+        else
+            export IS_CN_NETWORK=false
+        fi
     fi
 }
 
